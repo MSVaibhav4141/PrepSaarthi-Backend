@@ -7,27 +7,31 @@ const Student = require("../models/studentModel");
 const Mentor = require("../models/mentorModel");
 const path = require("path");
 
-dotenv.config({path : path.join(__dirname, '../config.env')});
+dotenv.config({ path: path.join(__dirname, "../config.env") });
 
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-const  generateRandomEmail = () =>  {
+const generateRandomEmail = () => {
   const randomString = Math.random().toString(36).substring(2, 10);
-  const domains = ["@example.com", "@sample.com", "@random.org"]; 
+  const domains = ["@example.com", "@sample.com", "@random.org"];
   const randomDomain = domains[Math.floor(Math.random() * domains.length)];
   return `sample_${randomString}${randomDomain}`;
-}
+};
 
 function generateRandomMobileNumber() {
-  const firstDigit = Math.floor(Math.random() * 9); 
-  const remainingDigits = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10)).join("");
+  const firstDigit = Math.floor(Math.random() * 9);
+  const remainingDigits = Array.from({ length: 9 }, () =>
+    Math.floor(Math.random() * 10)
+  ).join("");
   return `${firstDigit}${remainingDigits}`;
 }
 
 const seedDatabase = async () => {
+  const { default: chalk } = await import("chalk");
+
   try {
     rl.question(
       "Do you want to reset the database and have new records or push these records to the existing one? (reset/push): ",
@@ -35,7 +39,9 @@ const seedDatabase = async () => {
         const action = answer.toLowerCase().trim();
 
         const progressBar = new cliProgress.SingleBar({
-          format: "Fetching Data |{bar}| {percentage}% | {value}/{total} Bytes",
+          format: chalk.green(
+            "Fetching Data |{bar}| {percentage}% | {value}/{total} Bytes"
+          ),
           barCompleteChar: "\u2588",
           barIncompleteChar: "\u2591",
           hideCursor: true,
@@ -59,39 +65,50 @@ const seedDatabase = async () => {
         progressBar.stop();
 
         if (action === "reset") {
-          console.log("Resetting database and deleting existing data...");
+          console.log(
+            chalk.yellow("Resetting database and deleting existing data...")
+          );
           await Student.deleteMany({});
           await Mentor.deleteMany({});
-          console.log("Existing data deleted.");
+          console.log(chalk.yellow("Existing data deleted."));
         } else if (action === "push") {
-          console.log("Pushing records into the existing database...");
-          data[0].email = generateRandomEmail()
-          data[1].email = generateRandomEmail()
-          data[0].mobileNumber = generateRandomMobileNumber()
-          data[1].mobileNumber = generateRandomMobileNumber()
+          console.log(
+            chalk.green("Pushing records into the existing database...")
+          );
+          data[0].email = generateRandomEmail();
+          console.log(chalk.blue(`Student's Email - ${data[0].email}`));
+          data[1].email = generateRandomEmail();
+          console.log(chalk.magenta(`Mentor's Email - ${data[1].email}`));
+          data[0].mobileNumber = generateRandomMobileNumber();
+          data[1].mobileNumber = generateRandomMobileNumber();
         } else {
-          console.log("Invalid choice. Exiting...");
+          console.log(chalk.red("Invalid choice. Exiting..."));
           rl.close();
           process.exit(1);
         }
+
         await Student.insertMany(data[0]);
         await Mentor.insertMany(data[1]);
 
-        console.log("Database seeded successfully! Enjoy!");
+        console.log(chalk.green("Database seeded successfully! Enjoy!"));
         rl.close();
         process.exit(0);
       }
     );
   } catch (error) {
-    console.error("Error seeding database:", error);
+    console.error(chalk.red("Error seeding database:"), error);
     rl.close();
     process.exit(1);
-}
+  }
 };
 
-mongoose.connect(process.env.DB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
-.then(() => seedDatabase())
-.catch(error => {
-    console.error('Error connecting to MongoDB:', error)
+mongoose
+  .connect(process.env.DB_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => seedDatabase())
+  .catch((error) => {
+    console.error(chalk.red("Error connecting to MongoDB:"), error);
     process.exit(1);
-});
+  });
