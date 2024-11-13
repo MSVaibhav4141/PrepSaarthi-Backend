@@ -14,6 +14,19 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
+const  generateRandomEmail = () =>  {
+  const randomString = Math.random().toString(36).substring(2, 10);
+  const domains = ["@example.com", "@sample.com", "@random.org"]; 
+  const randomDomain = domains[Math.floor(Math.random() * domains.length)];
+  return `sample_${randomString}${randomDomain}`;
+}
+
+function generateRandomMobileNumber() {
+  const firstDigit = Math.floor(Math.random() * 9); 
+  const remainingDigits = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10)).join("");
+  return `${firstDigit}${remainingDigits}`;
+}
+
 const seedDatabase = async () => {
   try {
     rl.question(
@@ -52,11 +65,14 @@ const seedDatabase = async () => {
           console.log("Existing data deleted.");
         } else if (action === "push") {
           console.log("Pushing records into the existing database...");
+          data[0].email = generateRandomEmail()
+          data[1].email = generateRandomEmail()
+          data[0].mobileNumber = generateRandomMobileNumber()
+          data[1].mobileNumber = generateRandomMobileNumber()
         } else {
           console.log("Invalid choice. Exiting...");
           rl.close();
           process.exit(1);
-          return;
         }
         await Student.insertMany(data[0]);
         await Mentor.insertMany(data[1]);
