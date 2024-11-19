@@ -1,9 +1,15 @@
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const express = require("express");
-const allowedOrigin = [process.env.ALLOWEDORIGIN1,process.env.ALLOWEDORIGIN2];
+const allowedOrigin = [process.env.ALLOWEDORIGIN1, process.env.ALLOWEDORIGIN2];
 const app = express();
 const server = createServer(app);
+const {
+  saveMentorMessage,
+  saveStudentMessage,
+  getMentorMessages,
+  getStudentMessages,
+} = require("./controllers/messageController.js");
 const io = new Server(server, {
   cors: {
     origin: allowedOrigin,
@@ -12,6 +18,7 @@ const io = new Server(server, {
   },
 });
 const mentorRoute = require("./routes/metorRoute");
+const messageRoutes = require("./routes/messageRoute");
 const studentRoute = require("./routes/studentRoute");
 const rateLimit = require("express-rate-limit");
 const counter = require("./routes/counter.js");
@@ -56,8 +63,10 @@ app.use("/v1", counter);
 app.use("/v1", mentorRoute);
 app.use("/v1", studentRoute);
 app.use("/v1", paymentRoute);
+app.use("/v1", messageRoutes);
+
 io.on("connection", (socket) => {
-  chatService({io, socket,openedChat, connectedUsers, onlineUsers});
+  chatService({ io, socket, openedChat, connectedUsers, onlineUsers });
 });
 
 // io.on("connection", (socket) => {

@@ -649,10 +649,10 @@ exports.getAllMentors = errorCatcherAsync(async (req, res, next) => {
           isActive: true,
         }),
       },
-    }, // Shuffle all documents
+    },
     {
       $project: {
-        name: 1, 
+        name: 1,
         exam: 1,
         avatar: 1,
         pricePerMonth: 1,
@@ -660,12 +660,13 @@ exports.getAllMentors = errorCatcherAsync(async (req, res, next) => {
         collegeName: 1,
         branch: 1,
         yearOfStudy: 1,
-        totalActiveMentee:1,
+        totalActiveMentee: 1,
         ratings: 1,
         createdAt: 1,
       },
-    },
+    }
   ]);
+  console.log(users);
   res.status(200).json({
     success: true,
     users,
@@ -840,9 +841,9 @@ exports.allConnection = errorCatcherAsync(async (req, res, next) => {
       item.isActive = false;
       item.isConnected = false;
       const stu = await Student.findById(item.studentDetails._id);
-      if(stu){
-      stu.mentorAssigned = false;
-      await stu.save({ validateBeforeSave: false });
+      if (stu) {
+        stu.mentorAssigned = false;
+        await stu.save({ validateBeforeSave: false });
       }
       await item.save({ validateBeforeSave: false });
     }
@@ -862,17 +863,17 @@ exports.allConnectionHead = errorCatcherAsync(async (req, res, next) => {
   // } 
   const { id } = req.body;
   const connection = await Connection.find();
-  
+
   const currentDate = new Date(Date.now()).getTime();
   connection.forEach(async (item, i) => {
     if (item.expiresIn.getTime() < currentDate) {
       item.isActive = false;
       item.isConnected = false;
       const stu = await Student.findById(item.studentDetails._id);
-      if(stu){
+      if (stu) {
         stu.mentorAssigned = false;
         await stu.save({ validateBeforeSave: false });
-        }
+      }
       await item.save({ validateBeforeSave: false });
     }
   });
@@ -896,9 +897,9 @@ exports.allConnectionMentor = errorCatcherAsync(async (req, res, next) => {
       item.isActive = false;
       item.isConnected = false;
       const stu = await Student.findById(item.studentDetails._id);
-      if(stu){
-      stu.mentorAssigned = false;
-      await stu.save({ validateBeforeSave: false });
+      if (stu) {
+        stu.mentorAssigned = false;
+        await stu.save({ validateBeforeSave: false });
       }
       await item.save({ validateBeforeSave: false });
     }
@@ -912,24 +913,24 @@ exports.allConnectionMentor = errorCatcherAsync(async (req, res, next) => {
   res.status(200).json({
     success: true,
     connection: connectionUpdated,
-  }); 
+  });
 });
 exports.getConnectionByMob = errorCatcherAsync(async (req, res, next) => {
-  const student = await Student.findOne({mobileNumber:req.body.mobileNumber}).select("_id name");
-  if(!student){
+  const student = await Student.findOne({ mobileNumber: req.body.mobileNumber }).select("_id name");
+  if (!student) {
     return next(new ErrorHandler("No student found with given phone number", 404));
   }
-  const activeConnection = await Connection.find({studentDetails:student._id, isActive:true}).select('mentorDetails boughtAt expiresIn')
-  .populate("mentorDetails", "name mobileNumber avatar")
+  const activeConnection = await Connection.find({ studentDetails: student._id, isActive: true }).select('mentorDetails boughtAt expiresIn')
+    .populate("mentorDetails", "name mobileNumber avatar")
   res.status(200).json({
     activeConnection,
-    name:student.name,
-    stuId:student._id
+    name: student.name,
+    stuId: student._id
   })
 });
 exports.getMentorByMob = errorCatcherAsync(async (req, res, next) => {
-  const mentor = await Mentor.findOne({mobileNumber:req.body.mobileNumber}).select("name _id");
-  if(!mentor){
+  const mentor = await Mentor.findOne({ mobileNumber: req.body.mobileNumber }).select("name _id");
+  if (!mentor) {
     return next(new ErrorHandler("No mentor found with given phone number", 404));
   }
   res.status(200).json({
@@ -939,20 +940,20 @@ exports.getMentorByMob = errorCatcherAsync(async (req, res, next) => {
 
 exports.swapConnection = errorCatcherAsync(async (req, res, next) => {
   const connection = await Connection.findById(req.body.id)
-  if(!connection){
+  if (!connection) {
     return next(new ErrorHandler("No connection found", 404));
   }
   const mentor = await Mentor.findById(req.body.mentorId);
-  if(!mentor){
+  if (!mentor) {
     return next(new ErrorHandler("No such Mentor found", 404))
   }
   if (mentor._id.equals(connection.mentorDetails)) {
     return next(new ErrorHandler("Can't swap connection with same mentor"))
   }
   connection.mentorDetails = mentor._id;
-  await connection.save({validateBeforeSave:false})
+  await connection.save({ validateBeforeSave: false })
   res.status(200).json({
-    success:true
+    success: true
   })
 });
 //(admin) interpert connection
@@ -1088,7 +1089,7 @@ exports.deleteReview = errorCatcherAsync(async (req, res, next) => {
     return next(new ErrorHandler("Mentor not found", 404));
   }
   const reviews = mentor.reviews.filter(
-    (rev) => rev._id.toString() !== req.query.id.toString() 
+    (rev) => rev._id.toString() !== req.query.id.toString()
   );
   let avg = 0;
 
@@ -1377,39 +1378,39 @@ exports.sendOTP = errorCatcherAsync(async (req, res, next) => {
 // });
 
 exports.establishNewConnection = errorCatcherAsync(async (req, res, next) => {
-    if (!ObjectId.isValid(req.body.id)) {
-      return next(new ErrorHandler("Invalid Id", 400));
-    }
-  const student = await Student.findOne({mobileNumber:req.body.mobileNumber})
+  if (!ObjectId.isValid(req.body.id)) {
+    return next(new ErrorHandler("Invalid Id", 400));
+  }
+  const student = await Student.findOne({ mobileNumber: req.body.mobileNumber })
   const mentor = await Mentor.findById(req.body.id)
-  if(mentor.totalActiveMentee >= 3){
+  if (mentor.totalActiveMentee >= 3) {
     return next(new ErrorHandler("Mentor Already have more than 3 mentee", 400));
   }
   let duration = null;
-  
-  if(req.body.duration === 3){
-    duration =   new Date(new Date().setDate(new Date().getDate() + 30))
-  }else if(req.body.duration === 1){
+
+  if (req.body.duration === 3) {
+    duration = new Date(new Date().setDate(new Date().getDate() + 30))
+  } else if (req.body.duration === 1) {
     duration = new Date(new Date().setDate(new Date().getDate() + 7))
   }
-  
-  if(!student || !mentor){
+
+  if (!student || !mentor) {
     return next(new ErrorHandler("No records found", 404));
   }
-  
+
   const date = new Date(req.body.date)
-  
+
   const connection = {
-    studentDetails:student._id,
-    mentorDetails:mentor._id,
-    expiresIn:duration,
-    isActive:true,
-    isConnected:false,
-    price:req.body.price,
-    boughtAt:date
+    studentDetails: student._id,
+    mentorDetails: mentor._id,
+    expiresIn: duration,
+    isActive: true,
+    isConnected: false,
+    price: req.body.price,
+    boughtAt: date
   }
   await Connection.create(connection)
-  
+
   const emailContent = `
   <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
     <h2 style="color: #3A5AFF;">Purchase Successful!</h2>
@@ -1436,7 +1437,7 @@ exports.establishNewConnection = errorCatcherAsync(async (req, res, next) => {
     <p>Best regards,<br><span style="color: #3A5AFF;">The PrepSaarthi Team</span></p>
   </div>
 `;
-const mentorEmailContent = `
+  const mentorEmailContent = `
   <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
     <h2 style="color: #3A5AFF;">New Mentorship Purchase!</h2>
     <p>Dear ${mentor.name},</p>
@@ -1459,16 +1460,16 @@ const mentorEmailContent = `
     <p>Best regards,<br><span style="color: #3A5AFF;">The PrepSaarthi Team</span></p>
   </div>
 `;
-        await sendMail({
-          email: student.email,
-          subject: `Successfull purchase for ${mentor.name}'s mentorship`,
-          message: emailContent,
-        });
-        await sendMail({
-          email: mentor.email,
-          subject: `New Student Enrolled For Your Mentorship`,
-          message: mentorEmailContent,
-        });
+  await sendMail({
+    email: student.email,
+    subject: `Successfull purchase for ${mentor.name}'s mentorship`,
+    message: emailContent,
+  });
+  await sendMail({
+    email: mentor.email,
+    subject: `New Student Enrolled For Your Mentorship`,
+    message: mentorEmailContent,
+  });
   res.status(200).json({
     success: true,
     message: "Connection Established Successfully",

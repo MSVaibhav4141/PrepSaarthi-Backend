@@ -10,7 +10,7 @@ const sendMail = require("../utils/sendMail.js");
 const mongoose = require("mongoose");
 
 const wordToNumber = {
-  'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4', 
+  'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
   'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9',
 };
 
@@ -44,49 +44,49 @@ const detectNumberSharing = (message) => {
   const hasPhoneNumber = detectPhoneNumber(message);
 
   if ((hasKeyword && hasPhoneNumber) || hasPhoneNumber) {
-      return true
+    return true
   } else {
-      return false;
+    return false;
   }
 };
 
 
 exports.chatService = errorCatcherAsync(
-  async ({io, socket, openedChat, connectedUsers, onlineUsers}, res, next ) => {
-    
-    socket.on('senddd',(temp) => {
-      console.log(temp,'daad')
+  async ({ io, socket, openedChat, connectedUsers, onlineUsers }, res, next) => {
+
+    socket.on('senddd', (temp) => {
+      console.log(temp, 'daad')
     })
-    socket.on('temp-chat',(temp) => {
-      socket.emit('hide-footer',temp)
+    socket.on('temp-chat', (temp) => {
+      socket.emit('hide-footer', temp)
     })
-    socket.on('main-s',(userId) => {
+    socket.on('main-s', (userId) => {
       onlineUsers.set(userId, socket.id)
     })
-    socket.on('handle-typing', ({isTyping, reciverID, userId}) => {
-      if(connectedUsers.has(reciverID)){
+    socket.on('handle-typing', ({ isTyping, reciverID, userId }) => {
+      if (connectedUsers.has(reciverID)) {
         const reciver = connectedUsers.get(reciverID)
-        if(reciver){
-          io.to(reciver).emit('set-typing',({isTyping, userId}))
+        if (reciver) {
+          io.to(reciver).emit('set-typing', ({ isTyping, userId }))
         }
       }
     })
 
-    socket.on("status", async(userId) => {
-      const messages =  await Message.find({reciverId:userId, delivered:false})
+    socket.on("status", async (userId) => {
+      const messages = await Message.find({ reciverId: userId, delivered: false })
       const idsToUpdate = messages.map(doc => (doc._id).toString());
       const idsToSend = [...new Set(messages.map(doc => (doc.senderId).toString()))];
       const isUpdated = await Message.updateMany(
         { _id: { $in: idsToUpdate } }, // Match documents by their IDs
-        { $set: { delivered: true, deliveredAt:new Date() } }  // Update multiple fields
+        { $set: { delivered: true, deliveredAt: new Date() } }  // Update multiple fields
       );
       const onlineUsers = idsToSend
-      .filter(i => connectedUsers.has(i.toString())) // Filter the valid user IDs
-      .map(i => connectedUsers.get(i.toString()));
+        .filter(i => connectedUsers.has(i.toString())) // Filter the valid user IDs
+        .map(i => connectedUsers.get(i.toString()));
 
- 
-      if(onlineUsers.length > 0){
-      io.to(onlineUsers).emit('message-delivered', idsToUpdate)
+
+      if (onlineUsers.length > 0) {
+        io.to(onlineUsers).emit('message-delivered', idsToUpdate)
       }
       connectedUsers.set(userId, socket.id);
       socket.broadcast.emit("mystatus", { userId, status: "online" });
@@ -95,31 +95,31 @@ exports.chatService = errorCatcherAsync(
     socket.on("getonlineusers", (users) => {
       const onlineUsers = users.filter((item) => connectedUsers.has(item));
       socket.emit("onlineusers", onlineUsers);
-    }); 
+    });
 
     socket.on("join-chat", async ({ loged, userId, role }) => {
       // const {id,role} = req.user;
-      let messages = await Message.find({seen:false, reciverId:loged})
+      let messages = await Message.find({ seen: false, reciverId: loged })
       const idsToUpdate = messages.map(doc => ({
         _id: doc._id,
-        seenAt: new Date(), 
+        seenAt: new Date(),
       }));
-            const idsToSend = [...new Set(messages.map(doc => (doc.senderId).toString()))];
-            const bulkOps = idsToUpdate.map(item => ({
-              updateOne: {
-                filter: { _id: item._id },
-                update: { $set: { seen: true, seenAt: item.seenAt } },
-              },
-            }));
-            
+      const idsToSend = [...new Set(messages.map(doc => (doc.senderId).toString()))];
+      const bulkOps = idsToUpdate.map(item => ({
+        updateOne: {
+          filter: { _id: item._id },
+          update: { $set: { seen: true, seenAt: item.seenAt } },
+        },
+      }));
 
-            const result = await Message.bulkWrite(bulkOps);
-            const onlineUsers = idsToSend
-      .filter(i => connectedUsers.has(i.toString())) // Filter the valid user IDs
-      .map(i => connectedUsers.get(i.toString()));
-      if(onlineUsers.length > 0){
+
+      const result = await Message.bulkWrite(bulkOps);
+      const onlineUsers = idsToSend
+        .filter(i => connectedUsers.has(i.toString())) // Filter the valid user IDs
+        .map(i => connectedUsers.get(i.toString()));
+      if (onlineUsers.length > 0) {
         io.to(onlineUsers).emit('message-seen', idsToUpdate)
-        }
+      }
       openedChat.set(loged, userId);
       let chat = await Chat.findOne({
         mentorId: role === "mentor" ? loged : userId,
@@ -131,8 +131,8 @@ exports.chatService = errorCatcherAsync(
         // await chat.save();
         socket.emit("chat-retrival", { message: [], chatId: null });
       } else {
-        await Notification.updateOne({ chatId: chat._id, unseenFor: loged },{$set:{chatUnread:0, notificationUnseen:0}});
-        await Notification.deleteMany({chatUnread:0, notificationUnseen:0,unseenFor:loged})
+        await Notification.updateOne({ chatId: chat._id, unseenFor: loged }, { $set: { chatUnread: 0, notificationUnseen: 0 } });
+        await Notification.deleteMany({ chatUnread: 0, notificationUnseen: 0, unseenFor: loged })
         socket.emit("chat-retrival", {
           message: await Message.find({ chatId: chat._id }).sort({
             timeStamp: 1,
@@ -144,19 +144,64 @@ exports.chatService = errorCatcherAsync(
       // socket.join(chat._id.toString());
     });
 
+
+
+    socket.on("broadcast", async ({ message }) => {
+
+      const mentors = await Mentor.find({ isApproved: 'yes', isPending: 'no', mentoringStatus: 'active' });
+
+      mentors.forEach(async (mentor) => {
+        const chat = await Chat.findOne({
+          $or: [
+            { mentorId: mentor._id, studentId: 'all' },
+            { mentorId: 'all', studentId: mentor._id },
+          ],
+        });
+
+        if (!chat) {
+          chat = new Chat({
+            studentId: 'all',
+            mentorId: mentor._id,
+          });
+          await chat.save();
+        }
+        const message = new Message({
+          chatId: chat._id,
+          senderId: 'admin',
+          content: message,
+          reciverId: mentor._id,
+        });
+        await message.save();
+        const reciverId = connectedUsers.get(mentor._id);
+        if (reciverId) {
+          message.delivered = true;
+          message.deliveredAt = new Date();
+          await message.save();
+          io.to(reciverId).emit("recive-message", {
+            message: { ...message._doc, isHighlighted: true },
+            age: "old",
+          });
+        }
+      });
+
+    });
+
+
+
+
     socket.on(
       "send-message",
       async ({ senderId, content, userId, role }) => {
-        if(content.length === 0){
-          socket.emit('errors',({errorType:'noMessage',message:'No user found', }))
+        if (content.length === 0) {
+          socket.emit('errors', ({ errorType: 'noMessage', message: 'No user found', }))
 
         }
         // const chat = await Chat.findById(chatId);
-        if(detectNumberSharing(content)){
-          if(role === 'mentor'){
-            const mentor = await Mentor.findByIdAndUpdate(senderId, {$set:{mentoringStatus:'inactive'}})
+        if (detectNumberSharing(content)) {
+          if (role === 'mentor') {
+            const mentor = await Mentor.findByIdAndUpdate(senderId, { $set: { mentoringStatus: 'inactive' } })
             const student = await Student.findById(userId)
-const toAdmin = `<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: auto;">
+            const toAdmin = `<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: auto;">
     <div style="background-color: #FF6F61; padding: 20px; border-radius: 10px; text-align: center;">
         <h2 style="color: #fff; margin: 0;">Account Suspension Notification</h2>
     </div>
@@ -170,7 +215,7 @@ const toAdmin = `<div style="font-family: Arial, sans-serif; color: #333; line-h
         <p style="font-size: 1.1em;">
             <strong>Incident Details:</strong><br>
             <strong>Users Involved:</strong> ${mentor.name}, ${student.name} <br>
-            <strong>Date and Time:</strong> ${(new Date()).toLocaleString('en-GB', {day: '2-digit',month: '2-digit',year: 'numeric',hour: '2-digit',minute: '2-digit',hour12: true,})}<br>
+            <strong>Date and Time:</strong> ${(new Date()).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, })}<br>
             <strong>Reason:</strong> Sharing of personal phone numbers within the platform.
         </p>
   
@@ -213,25 +258,25 @@ const toAdmin = `<div style="font-family: Arial, sans-serif; color: #333; line-h
         </p>
     </div>
 </div>
-`     
-await sendMail({
-  email: mentor.email,
-  subject: `Account suspension notice`,
-  message: suspension,
-});
-await sendMail({
-  email: process.env.PRCTRMAIL,
-  subject: `Account suspension notice`,
-  message: toAdmin,
-});
+`
+            await sendMail({
+              email: mentor.email,
+              subject: `Account suspension notice`,
+              message: suspension,
+            });
+            await sendMail({
+              email: process.env.PRCTRMAIL,
+              subject: `Account suspension notice`,
+              message: toAdmin,
+            });
 
             // await Mentor.findByIdAndUpdate(senderId, {$set:{mentoringStatus:'inactive', isApproved:'no', isPending:'yes'}})
           }
-          if(role === 'student'){
-           const student =  await Student.findByIdAndUpdate(senderId, {$set:{isActive:false}})
-           const mentor = await Mentor.findById(userId)
+          if (role === 'student') {
+            const student = await Student.findByIdAndUpdate(senderId, { $set: { isActive: false } })
+            const mentor = await Mentor.findById(userId)
 
-           const toAdmin = `<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: auto;">
+            const toAdmin = `<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: auto;">
     <div style="background-color: #FF6F61; padding: 20px; border-radius: 10px; text-align: center;">
         <h2 style="color: #fff; margin: 0;">Account Suspension Notification</h2>
     </div>
@@ -245,7 +290,7 @@ await sendMail({
         <p style="font-size: 1.1em;">
             <strong>Incident Details:</strong><br>
             <strong>Users Involved:</strong> ${mentor.name}, ${student.name} <br>
-            <strong>Date and Time:</strong> ${(new Date()).toLocaleString('en-GB', {day: '2-digit',month: '2-digit',year: 'numeric',hour: '2-digit',minute: '2-digit',hour12: true,})}<br>
+            <strong>Date and Time:</strong> ${(new Date()).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, })}<br>
             <strong>Reason:</strong> Sharing of personal phone numbers within the platform.
         </p>
   
@@ -259,7 +304,7 @@ await sendMail({
     </div>
 </div>
 `
-           
+
             const suspension = `<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: auto;">
             <div style="background-color: #3A5AFF; padding: 20px; border-radius: 10px; text-align: center;">
                 <h2 style="color: #fff; margin: 0;">Account Suspension Notice</h2>
@@ -289,20 +334,20 @@ await sendMail({
                 </p>
             </div>
         </div>
-        `     
-        await sendMail({
-          email: student.email,
-          subject: `Account suspension notice`,
-          message: suspension,
-        });
-        await sendMail({
-          email:process.env.PRCTRMAIL,
-          subject: `Account suspension notice`,
-          message: toAdmin,
-        });
+        `
+            await sendMail({
+              email: student.email,
+              subject: `Account suspension notice`,
+              message: suspension,
+            });
+            await sendMail({
+              email: process.env.PRCTRMAIL,
+              subject: `Account suspension notice`,
+              message: toAdmin,
+            });
           }
 
-          socket.emit('errors',({errorType:'restrictedContent',message:'Sharing Numbers Are Stricty Prohibited'}))
+          socket.emit('errors', ({ errorType: 'restrictedContent', message: 'Sharing Numbers Are Stricty Prohibited' }))
 
           return;
         }
@@ -315,7 +360,7 @@ await sendMail({
         }
         if (!userExists) {
           // return next(new ErrorHandler("Not allowed", 403))
-          socket.emit('errors',({errorType:'nouserFound',message:'No user found', }))
+          socket.emit('errors', ({ errorType: 'nouserFound', message: 'No user found', }))
           return;
         }
         // const messageObject = {
@@ -329,11 +374,11 @@ await sendMail({
             { mentorId: userId, studentId: senderId },
           ],
         });
-        const senderDetails = await Student.findById(senderId) || await Mentor.findById(senderId) ;
+        const senderDetails = await Student.findById(senderId) || await Mentor.findById(senderId);
 
         if (!chat) {
-          if(content.length > 500){
-            socket.emit('errors',({errorType:'message-limit',message:'You must buy the mentorship to continue chatting', }))
+          if (content.length > 500) {
+            socket.emit('errors', ({ errorType: 'message-limit', message: 'You must buy the mentorship to continue chatting', }))
             return;
           }
           chat = new Chat({
@@ -346,7 +391,7 @@ await sendMail({
             senderId,
             content,
             reciverId: userId,
-            timeStamp:new Date()
+            timeStamp: new Date()
           });
           await message.save();
           chat.chatLeft = chat.chatLeft - content.length;
@@ -360,10 +405,10 @@ await sendMail({
             senderId: message.senderId,
             time: message.timeStamp,
             chatId: message.chatId,
-            reciverId:userId,
+            reciverId: userId,
             isHighlighted: true,
             unreadChat: 1,
-            unseenFor:userId
+            unseenFor: userId
           };
           const reciverId = connectedUsers.get(userId);
           const isOnline = onlineUsers.get(userId);
@@ -377,26 +422,26 @@ await sendMail({
               notificationUser.notificationUnseen = reciverId ? 0 : 1;
               notificationUser.unseenFor = userId;
               notificationUser.senderName = senderDetails.name,
-              notificationUser.senderContent = message.content,
-              notificationUser.senderId = senderId,
-              notificationUser.senderAvatar = userExists.avatar.public_URI
+                notificationUser.senderContent = message.content,
+                notificationUser.senderId = senderId,
+                notificationUser.senderAvatar = userExists.avatar.public_URI
               await notificationUser.save();
             } else {
-               notificationUser = new Notification({
+              notificationUser = new Notification({
                 chatId: chat._id,
                 chatUnread: 1,
                 notificationUnseen: reciverId ? 0 : 1,
-                senderName:senderDetails.name,
-                senderContent:message.content,
-                senderId:senderId,
-                senderAvatar:senderDetails.avatar.public_URI,
+                senderName: senderDetails.name,
+                senderContent: message.content,
+                senderId: senderId,
+                senderAvatar: senderDetails.avatar.public_URI,
                 unseenFor: userId,
               });
               await notificationUser.save();
             }
-            if(!reciverId && isOnline){
+            if (!reciverId && isOnline) {
               const online = onlineUsers.get(userId)
-              io.to(online).emit('send-not', ({notificationUser}))
+              io.to(online).emit('send-not', ({ notificationUser }))
             }
           } catch (e) {
             console.log(e);
@@ -404,7 +449,7 @@ await sendMail({
           if (reciverId) {
             message.delivered = true;
             message.deliveredAt = new Date();
-            if(openedChat.get(userId) === senderId){
+            if (openedChat.get(userId) === senderId) {
               message.seen = true;
               message.deliveredAt = new Date();
             }
@@ -414,27 +459,27 @@ await sendMail({
               age: "new",
             });
           }
-          socket.emit("recive-message", {message,name:userExists.name, avatar:userExists.avatar,status:reciverId ? 'online':'offline' ,age: "old", chatLeft:chat.chatLeft});
+          socket.emit("recive-message", { message, name: userExists.name, avatar: userExists.avatar, status: reciverId ? 'online' : 'offline', age: "old", chatLeft: chat.chatLeft });
         } else {
-          if(role === 'student'){
-            const isSubscribed = await Connection.findOne({studentDetails:senderId, mentorDetails:userId, isActive:true})
-            if(!isSubscribed){
-              if(chat.chatLeft < content.length){
-                socket.emit('errors',({errorType:'message-limit',message:'You must buy the mentorship to continue', }))
+          if (role === 'student') {
+            const isSubscribed = await Connection.findOne({ studentDetails: senderId, mentorDetails: userId, isActive: true })
+            if (!isSubscribed) {
+              if (chat.chatLeft < content.length) {
+                socket.emit('errors', ({ errorType: 'message-limit', message: 'You must buy the mentorship to continue', }))
                 return;
-            }
+              }
             }
           }
-          if(role === 'mentor'){
-            const isSubscribed = await Connection.findOne({studentDetails:userId, mentorDetails:senderId, isActive:true})
-            if(!isSubscribed){
-              if(chat.chatLeft <= 0){
-                socket.emit('errors',({errorType:'message-limit',message:'You currently dont have active connection with this mentee', }))
+          if (role === 'mentor') {
+            const isSubscribed = await Connection.findOne({ studentDetails: userId, mentorDetails: senderId, isActive: true })
+            if (!isSubscribed) {
+              if (chat.chatLeft <= 0) {
+                socket.emit('errors', ({ errorType: 'message-limit', message: 'You currently dont have active connection with this mentee', }))
                 return;
-            }
+              }
             }
           }
-        
+
           const message = new Message({
             chatId: chat._id,
             senderId,
@@ -451,57 +496,58 @@ await sendMail({
           const reciverId = connectedUsers.get(userId);
           const isOnline = onlineUsers.get(userId);
           const isOpenChat = openedChat.get(userId) === senderId;
-          if(!isOpenChat){
-          try {
-            let notificationUser = await Notification.findOne({
-              chatId: chat._id,
-            });
-
-            if (notificationUser) {
-              
-              notificationUser.chatUnread = notificationUser.chatUnread + 1;
-              notificationUser.notificationUnseen = reciverId ? 0 : 1
-              notificationUser.unseenFor = senderId;
-              notificationUser.senderName = senderDetails.name,
-              notificationUser.senderContent = message.content,
-              notificationUser.senderAvatar = senderDetails.avatar.public_URI,
-              notificationUser.senderId = userExists._id,
-              await notificationUser.save();
-            } else {
-              notificationUser = new Notification({
+          if (!isOpenChat) {
+            try {
+              let notificationUser = await Notification.findOne({
                 chatId: chat._id,
-                chatUnread: 1,
-                notificationUnseen: reciverId ? 0 : 1,
-                senderName:senderDetails.name,
-                senderAvatar:senderDetails.avatar.public_URI,
-                senderContent:message.content,
-                senderId:senderId,
-                unseenFor: userId,
               });
-              await notificationUser.save();
+
+              if (notificationUser) {
+
+                notificationUser.chatUnread = notificationUser.chatUnread + 1;
+                notificationUser.notificationUnseen = reciverId ? 0 : 1
+                notificationUser.unseenFor = senderId;
+                notificationUser.senderName = senderDetails.name,
+                  notificationUser.senderContent = message.content,
+                  notificationUser.senderAvatar = senderDetails.avatar.public_URI,
+                  notificationUser.senderId = userExists._id,
+                  await notificationUser.save();
+              } else {
+                notificationUser = new Notification({
+                  chatId: chat._id,
+                  chatUnread: 1,
+                  notificationUnseen: reciverId ? 0 : 1,
+                  senderName: senderDetails.name,
+                  senderAvatar: senderDetails.avatar.public_URI,
+                  senderContent: message.content,
+                  senderId: senderId,
+                  unseenFor: userId,
+                });
+                await notificationUser.save();
+              }
+              if (!reciverId && isOnline) {
+                const online = onlineUsers.get(userId)
+                io.to(online).emit('send-not', ({ notificationUser }))
+              }
+            } catch (e) {
+              console.log(e);
             }
-            if(!reciverId && isOnline){
-              const online = onlineUsers.get(userId)
-              io.to(online).emit('send-not', ({notificationUser}))
-            }
-          } catch (e) {
-            console.log(e);
-          }}
+          }
           if (reciverId) {
             message.delivered = true;
             message.deliveredAt = new Date();
-            if(isOpenChat){
+            if (isOpenChat) {
               message.seen = true;
               message.seenAt = new Date();
             }
             await message.save();
 
             io.to(reciverId).emit("recive-message", {
-              message: { ...message._doc, isHighlighted:isOpenChat ? false : true },
+              message: { ...message._doc, isHighlighted: isOpenChat ? false : true },
               age: "old",
             });
           }
-          socket.emit("recive-message", { message, age: "old",chatLeft:chat.chatLeft });
+          socket.emit("recive-message", { message, age: "old", chatLeft: chat.chatLeft });
         }
       }
     );
@@ -636,9 +682,9 @@ exports.retriveChat = errorCatcherAsync(async (req, res, next) => {
 // module.exports = chatService
 
 exports.notificationFetch = errorCatcherAsync(
-  async(req, res, next) => {
-    await Notification.deleteMany({chatUnread:0, notificationUnseen:0, unseenFor:req.body.id})
-    const notification = await Notification.find({unseenFor:req.body.id,  notificationUnseen: { $gt: 0 }})
+  async (req, res, next) => {
+    await Notification.deleteMany({ chatUnread: 0, notificationUnseen: 0, unseenFor: req.body.id })
+    const notification = await Notification.find({ unseenFor: req.body.id, notificationUnseen: { $gt: 0 } })
     res.status(200).json({
       notification,
       success: true,
@@ -646,9 +692,9 @@ exports.notificationFetch = errorCatcherAsync(
   }
 )
 exports.notificationDelete = errorCatcherAsync(
-  async(req, res, next) => {
-    await Notification.deleteMany({_id:req.body.id})
-    const notification = await Notification.find({unseenFor:req.body.id,  notificationUnseen: { $gt: 0 }})
+  async (req, res, next) => {
+    await Notification.deleteMany({ _id: req.body.id })
+    const notification = await Notification.find({ unseenFor: req.body.id, notificationUnseen: { $gt: 0 } })
     res.status(200).json({
       notification,
       success: true,
