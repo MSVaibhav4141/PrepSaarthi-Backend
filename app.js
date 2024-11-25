@@ -32,6 +32,7 @@ const { chatService } = require("./chatService/chatController.js");
 const connectedUsers = new Map();
 const onlineUsers = new Map();
 const openedChat = new Map();
+const socket = require("socket.io");
 app.use(
   cors({
     credentials: true,
@@ -68,6 +69,7 @@ app.use("/v1", messageRoutes);
 io.on("connection", (socket) => {
   chatService({ io, socket, openedChat, connectedUsers, onlineUsers });
 });
+
 
 // io.on("connection", (socket) => {
 //   console.log("User Connected", socket.id);
