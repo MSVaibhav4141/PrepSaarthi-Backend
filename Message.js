@@ -1,5 +1,6 @@
 const MentorMessage = require("../models/MentorMessage");
 const StudentMessage = require("../models/StudentMessage");
+const errorCatcherAsync = require("./utils/errorCatcherAsync");
 
 // Save a message for mentors
 exports.saveMentorMessage = async (req, res) => {
@@ -40,11 +41,7 @@ exports.getMentorMessages = async (req, res) => {
 };
 
 // Retrieve messages for students
-exports.getStudentMessages = async (req, res) => {
-  try {
-    const messages = await StudentMessage.find().sort({ createdAt: -1 });
-    res.status(200).json({ success: true, data: messages });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-};
+exports.getStudentMessages = errorCatcherAsync(async (req, res) => {
+  const messages = await StudentMessage.find().sort({ createdAt: -1 });
+  res.status(200).json({ success: true, data: messages });
+});

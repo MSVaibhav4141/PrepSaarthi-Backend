@@ -35,6 +35,8 @@ exports.reegisterStudent = errorCatcherAsync(async (req, res, next) => {
       crop: "scale",
     });
     const { name, email, password, mobileNumber } = req.body;
+    console.log(name,email,password,mobileNumber);
+    
     const user = await Student.create({
       name,
       email,
