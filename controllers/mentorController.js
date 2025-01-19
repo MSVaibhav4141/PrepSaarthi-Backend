@@ -22,18 +22,18 @@ exports.uploadMulter = errorCatcherAsync(async (req, res, next) => {
 });
 
 exports.registerMentor = errorCatcherAsync(async (req, res, next) => {
-  const userCheck = await Student.findOne({ email: req.body.email });
-  const userMob = await Student.findOne({
-    mobileNumber: req.body.mobileNumber,
-  });
-  if (userCheck || userMob) {
-    return next(new ErrorHandler("Account already exists", 400));
-  }
+  // const userCheck = await Student.findOne({ email: req.body.email });
+  // const userMob = await Student.findOne({
+  //   mobileNumber: req.body.mobileNumber,
+  // });
+  // if (userCheck || userMob) {
+  //   return next(new ErrorHandler("Account already exists", 400));
+  // }
 
-  const isVerified = await verifyOTP(req, next);
-  if (!isVerified) {
-    return next(new ErrorHandler("Incorrect or expired OTP", 400));
-  }
+  // const isVerified = await verifyOTP(req, next);
+  // if (!isVerified) {
+  //   return next(new ErrorHandler("Incorrect or expired OTP", 400));
+  // }
   if (req.body.avatar) {
     const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
       folder: "avatars",
@@ -856,6 +856,7 @@ exports.allConnection = errorCatcherAsync(async (req, res, next) => {
     connection: connectionUpdated,
   });
 });
+
 exports.allConnectionHead = errorCatcherAsync(async (req, res, next) => {
   // if(!req.user.isHeadMentor){
   //   return next(new ErrorHandler("Action not allowed", 401));
@@ -998,7 +999,7 @@ exports.popUpControll = errorCatcherAsync(async (req, res, next) => {
   if (!mentor.isHeadMentor) {
     return next(new ErrorHandler("Invalid Request", 401));
   }
-  if (req.body.popUp) {
+  if (req.body.popUp) { 
     mentor.popUp = false;
     await mentor.save();
   }
@@ -1376,6 +1377,130 @@ exports.sendOTP = errorCatcherAsync(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     message: "OTP sent successfully",
+  });
+});
+
+exports.sendOTPMobile = errorCatcherAsync(async (req, res, next) => {
+  const isUser = await Mentor.findOne({
+    mobileNumber: req.body.mobileNumber,
+  });
+  const isUserStu = await Student.findOne({
+    mobileNumber: req.body.mobileNumber,
+  });
+
+  if (isUser || isUserStu) {
+    return next(
+      new ErrorHandler(
+        "Account already exists with this mobile number, please use a different mobile number",
+        500
+      )
+    );
+  }
+
+  const user = req.body;
+  const otp = await generateOtp(user);
+
+  try {
+    const url = "https://www.fast2sms.com/dev/bulkV2";
+    const data = {
+      route: "otp",
+      variables_values: otp.mobOtp,
+      numbers: user.mobileNumber,
+    };
+    const headers = {
+      Authorization: process.env.TEXTSMS,
+      "Content-Type": "application/json",
+    };
+    await axios.post(url, data, { headers });
+
+    const otpGenerated = await OTPGenerate.findOne({
+      mobileNumber: user.mobileNumber,
+    });
+    otpGenerated.otpCount += 1;
+    await otpGenerated.save({ validateBeforeSave: false });
+  } catch (e) {
+    console.log(e);
+    await OTPGenerate.deleteMany({
+      mobileNumber: user.mobileNumber,
+    });
+    return next(
+      new ErrorHandler(e?.response?.data?.message || e?.message, 500)
+    );
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: "OTP sent successfully to mobile number",
+  });
+});
+
+exports.sendOTPEmail = errorCatcherAsync(async (req, res, next) => {
+  const isUser = await Mentor.findOne({
+    email: req.body.email,
+  });
+  const isUserStu = await Student.findOne({
+    email: req.body.email,
+  });
+
+  if (isUser || isUserStu) {
+    return next(
+      new ErrorHandler(
+        "Account already exists with this email, please use a different email",
+        500
+      )
+    );
+  }
+
+  const user = req.body;
+  const otp = await generateOtp(user);
+
+  try {
+    const otpEmailContent = `
+      <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: auto;">
+        <div style="background-color: #3A5AFF; padding: 20px; border-radius: 10px; text-align: center;">
+          <h2 style="color: #fff; margin: 0;">Your OTP Code</h2>
+        </div>
+        <div style="padding: 20px; background-color: #f9f9f9; border-radius: 0 0 10px 10px;">
+          <p style="font-size: 1.1em;">
+            We received a request to verify your identity. Please use the OTP code below to complete your process.
+          </p>
+          <div style="text-align: center; margin: 20px 0;">
+            <span style="font-size: 1.5em; font-weight: bold; color: #3A5AFF; padding: 10px 20px; border: 2px dashed #ffc43b; border-radius: 5px;">
+              ${otp.otp}
+            </span>
+          </div>
+          <p style="font-size: 1.1em;">
+            This OTP is valid for the next 10 minutes. If you did not request this, please contact our support team immediately.
+          </p>
+          <p>Best regards,<br><span style="color: #3A5AFF;">The Prepsaarthi Team</span></p>
+        </div>
+      </div>
+    `;
+
+    await sendMail({
+      email: user.email,
+      subject: `Verification OTP ${otp.otp}`,
+      message: otpEmailContent,
+    });
+
+    const otpGenerated = await OTPGenerate.findOne({
+      email: user.email,
+    });
+    otpGenerated.otpCount += 1;
+    await otpGenerated.save({ validateBeforeSave: false });
+  } catch (e) {
+    console.log(e);
+    await OTPGenerate.deleteMany({
+      email: user.email,
+    });
+    return next(
+      new ErrorHandler(e?.response?.data?.message || e?.message, 500)
+    );
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: "OTP sent successfully to email",
   });
 });
 

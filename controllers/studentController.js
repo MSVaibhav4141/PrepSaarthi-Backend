@@ -13,7 +13,9 @@ const bcryptjs = require("bcryptjs");
 const OTPGenerate = require("../models/userVerficationOtp.js");
 // const OTPGenerate = require('../models/userVerficationOtp.js')
 const sendMail = require("../utils/sendMail.js");
+const { changeCoverPhoto } = require("./mentorController.js");
 //Registering a USER
+
 
 exports.reegisterStudent = errorCatcherAsync(async (req, res, next) => {
   const userCheck = await Mentor.findOne({ email: req.body.email });
@@ -28,6 +30,7 @@ exports.reegisterStudent = errorCatcherAsync(async (req, res, next) => {
   if (!isVerified) {
     return next(new ErrorHandler("Incorrect or expired OTP", 400));
   }
+
   if (req.body.avatar) {
     const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
       folder: "avatars",
@@ -65,7 +68,7 @@ exports.reegisterStudent = errorCatcherAsync(async (req, res, next) => {
   }
 });
 
-const verifyOTP = async (req, next) => {
+exports.verifyOTP = async (req, next) => {
   const otp = req.body.emailOTP;
   const mobOtp = req.body.numberOTP;
   if (!otp || !mobOtp) {
@@ -106,6 +109,75 @@ const verifyOTP = async (req, next) => {
 
   return true;
 };
+
+
+//seperate function for both verification of numb and email
+exports.verifyEmailOTP = async (req, next) => {
+  const otp = req.body.emailOTP;
+  if (!otp) {
+    return next(new ErrorHandler("Please enter the email OTP", 400));
+  }
+
+  const userOTPVerification = await OTPGenerate.find({
+    email: req.body.email,
+  });
+
+  if (userOTPVerification.length <= 0) {
+    return next(
+      new ErrorHandler(
+        "Account doesn't exist or already verified. Please login or signup"
+      )
+    );
+  }
+  const { expiresIn, otp: hashedOTP } = userOTPVerification[0];
+
+  if (expiresIn < Date.now()) {
+    await OTPGenerate.deleteMany({ email: req.body.email });
+    return false;
+  }
+
+  const validOTP = await bcryptjs.compare(otp, hashedOTP);
+
+  if (!validOTP) {
+    return false;
+  }
+
+  return true;
+};
+
+exports.verifyMobileOTP = async (req, next) => {
+  const mobOtp = req.body.numberOTP;
+  if (!mobOtp) {
+    return next(new ErrorHandler("Please enter the mobile OTP", 400));
+  }
+
+  const userOTPVerification = await OTPGenerate.find({
+    mobileNumber: req.body.mobileNumber,
+  });
+
+  if (userOTPVerification.length <= 0) {
+    return next(
+      new ErrorHandler(
+        "Account doesn't exist or already verified. Please login or signup"
+      )
+    );
+  }
+  const { expiresIn, mobOtp: hashedMobOTP } = userOTPVerification[0];
+
+  if (expiresIn < Date.now()) {
+    await OTPGenerate.deleteMany({ mobileNumber: req.body.mobileNumber });
+    return false;
+  }
+
+  const validMobOTP = await bcryptjs.compare(mobOtp, hashedMobOTP);
+
+  if (!validMobOTP) {
+    return false;
+  }
+
+  return true;
+};
+
 // USER Login
 
 exports.loginStudent = errorCatcherAsync(async (req, res, next) => {
@@ -2444,4 +2516,9 @@ exports.getAllStudents = errorCatcherAsync(async (req, res, next) => {
 //     sucess: true,
 //     message: `${userName} removed successfully`,
 //   });
+
 // });
+
+
+// });
+

@@ -1,10 +1,11 @@
+
 const express = require("express");
 
 const isAuthorize = require("../middlewares/isAuthorize");
 const isAuthorizeStu = require("../middlewares/isAuthorizeStu");
 const roleAuth = require("../utils/roleAuth");
 const rateLimit = require('../utils/checkLastOtp')
-const { registerMentor, loginMentor, logout, forgotPass, resetPassord, getMentorDetails, updatePassword, updateProfile, updateMentorInfo, getSingleUsers, getAllMentors, loadUserDetails, updateMentorInfoAfter, getAllMentorByStatus, updateRole, getAllStudents, deleteUser, getAllMentorsAdmin, getAllAdmin, allConnection, assignConnection, removeConnection, allMentorConnection, resendOTP, sendOTP, updateMentoringStatus, uploadMulter, headMentorMentors, allConnectionHead, grantStatus, changeCoverPhoto, popUpControll, isTkid, establishNewConnection, getMentorDetailsAdmin, allConnectionMentor, getMentorDetailsByMob, getConnectionByMob, getMentorByMob, swapConnection, checkMail, verifyCertificate } = require("../controllers/mentorController");
+const { registerMentor, loginMentor, logout, forgotPass, resetPassord, getMentorDetails, updatePassword, updateProfile, updateMentorInfo, getSingleUsers, getAllMentors, loadUserDetails, updateMentorInfoAfter, getAllMentorByStatus, updateRole, getAllStudents, deleteUser, getAllMentorsAdmin, getAllAdmin, allConnection, assignConnection, removeConnection, allMentorConnection, resendOTP, sendOTP, updateMentoringStatus, uploadMulter, headMentorMentors, allConnectionHead, grantStatus, changeCoverPhoto, popUpControll, isTkid, establishNewConnection, getMentorDetailsAdmin, allConnectionMentor, getMentorDetailsByMob, getConnectionByMob, getMentorByMob, swapConnection, checkMail, verifyCertificate, sendOTPEmail,sendOTPMobile } = require("../controllers/mentorController");
 const multer = require("multer");
 const { retriveChat, notificationFetch } = require("../chatService/chatController");
 const storage = multer.memoryStorage();
@@ -73,6 +74,11 @@ router.route("/users/send/otp").post(rateLimit, sendOTP)
 // router.route("/student/verify/otp").post(isAuthorizeStu, verifyOTP)
 router.route("/student/resend/otp").post(rateLimit, resendOTP)
 router.route("/student/send/otp").post( rateLimit, sendOTP)
+//for mobile and email otp seperately
+router.route("/student/send/mobile/otp").post( rateLimit,sendOTPMobile)
+router.route("/student/send/email/otp").post( rateLimit,sendOTPEmail)
+
+
 router.route("/tkid/isexists").post(isTkid)
 
 module.exports = router;
