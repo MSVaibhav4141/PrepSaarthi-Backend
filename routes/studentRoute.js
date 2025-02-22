@@ -1,12 +1,14 @@
+
 const express = require("express");
+const router = express.Router();
 
-const isAuthorizeStu = require("../middlewares/isAuthorizeStu");
-const roleAuth = require("../utils/roleAuth");
+const isAuthorizeStu = require("../middlewares/isAuthorizeStu.js");
+const roleAuth = require("../utils/roleAuth.js");
 
-const { reegisterStudent, loginStudent , logout,  forgotPass,  resetPassord, loadUserDetails, getStudentDetails, updatePassword, updateStudentProfile, getAllStudents, buyMentorShipDay, getAllAssignedMentors, getActiveMentorship, allConnectionSuccessfull, changeCoverPhotoStu, updateTracker, getSyllabusTracker,} = require("../controllers/studentController");
-const { createMentorReview, getMentorReviews, deleteReview } = require("../controllers/mentorController");
+const { reegisterStudent, loginStudent , logout,  forgotPass,  resetPassord, loadUserDetails, getStudentDetails, updatePassword, updateStudentProfile, getAllStudents, buyMentorShipDay, getAllAssignedMentors, getActiveMentorship, allConnectionSuccessfull, changeCoverPhotoStu, updateTracker, getSyllabusTracker, verifyMobileOTP, verifyEmailOTP,uploadPhysicsNotes, uploadChemistryNote, uploadMathsNote} = require("../controllers/studentController.js");
+const { createMentorReview, getMentorReviews, deleteReview } = require("../controllers/mentorController.js");
 const multer = require("multer");
-const { retriveChat, notificationFetch } = require("../chatService/chatController");
+const { retriveChat, notificationFetch } = require("../chatService/chatController.js");
 const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
@@ -19,7 +21,14 @@ const upload = multer({
     }
   }
 });
-const router = express.Router();
+// Check if the controller functions are properly imported
+console.log('registerStudent:', reegisterStudent);
+console.log('loginStudent:', loginStudent);
+console.log('forgotPass:', forgotPass);
+console.log('resetPassord:', resetPassord);
+
+console.log('getAllAssignedMentors:', verifyMobileOTP);
+// Add similar logs for other controller functions as needed
 
 router.route("/student/register").post(upload.single('avatar'), reegisterStudent);
 router.route("/student/login").post(loginStudent);
@@ -39,9 +48,8 @@ router.route("/student/past/mentorship").get(isAuthorizeStu, getAllAssignedMento
 router.route("/student/active/mentorship").get(isAuthorizeStu, getActiveMentorship);
 router.route("/student/get/tracker").post(isAuthorizeStu,getSyllabusTracker);
 router.route("/student/update/tracker").put(isAuthorizeStu, updateTracker);
-router.route("/stu/update/cover").put(isAuthorizeStu, upload.single('avatar'),changeCoverPhotoStu)
+router.route("/stu/update/cover").put(isAuthorizeStu, upload.single('avatar'),changeCoverPhotoStu);
 
-// router.route("/student/user/info/:id").get(getSingleUsers);
 
 // // Admin Routes
 router.route("/student/admin/mentors").get(getAllStudents);
@@ -52,12 +60,24 @@ router
   .route("/student/reviews")
   .get(getMentorReviews)
   .delete(isAuthorizeStu, deleteReview);
+
 // router
 //   .route("/admin/users/:id")
-//   .get(isAuth, roleAuth("admin"), getSingleUsers)
-//   .put(isAuth, roleAuth("admin"), updateRole)
 //   .delete(isAuth, roleAuth("admin"), deleteUser);
+  // .get(isAuth, roleAuth("admin"), getSingleUsers)
+  // .put(isAuth, roleAuth("admin"), updateRole)
 //common routes
-// router.route("/student/verify/otp").post(isAuthorizeStu, verifyOTP)
+
+//adding routing for verification of email and phone
+router.route("/student/verify/emailotp").post(isAuthorizeStu, verifyEmailOTP);
+router.route("/student/verify/numbotp").post(isAuthorizeStu, verifyMobileOTP);
+
+router.route('/student/:studentId/phy/:chapterId')
+  .put(isAuthorizeStu, uploadPhysicsNotes);
+router.route('/student/:studentId/chem/:chapterId')
+  .put(isAuthorizeStu, uploadChemistryNote);
+router.route('/student/:studentId/maths/:chapterId')
+  .put(isAuthorizeStu, uploadMathsNote );
+
 
 module.exports = router;

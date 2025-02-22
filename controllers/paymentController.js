@@ -96,7 +96,8 @@ exports.paymentVerification = errorCatcherAsync(async (req, res, next) => {
         const connection = {
           studentDetails:req.user.id,
           mentorDetails:id,
-          expiresIn:duration === 'week' ? new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)) : (duration === 'month'? new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)): new Date(Date.now())),
+          // expiresIn:duration === 'week' ? new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)) : (duration === 'month'? new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)): new Date(Date.now())),
+          expiresIn:duration === 'month' ? new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)) : (duration === '3month'? new Date(Date.now() + (90 * 24 * 60 * 60 * 1000)) : (duration === '6month'? new Date(Date.now() + (180 * 24 * 60 * 60 * 1000)) : new Date(Date.now()))),
           isActive:true,
           isConnected:false,
           price:price
@@ -219,7 +220,7 @@ exports.paymentVerificationSub = errorCatcherAsync(async (req, res, next) => {
         await user.save({ validateBeforeSave: false });
     
         res.redirect(
-          `http://localhost:3000/payment/success?reference=${razorpay_payment_id}`
+`${process.env.REACT_APP_FRONTEND_URL}/payment/success?reference=${razorpay_payment_id}`
         );
       } else {
         res.redirect(`${process.env.FRONTEND_URL}/paymentfailed`);

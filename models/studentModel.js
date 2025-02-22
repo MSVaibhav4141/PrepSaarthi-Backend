@@ -73,8 +73,6 @@ const studentSchema = new mongoose.Schema({
     },
   },
 
- 
- 
   mentorAssigned: {
     type: Boolean,
     default: false
@@ -105,6 +103,69 @@ const studentSchema = new mongoose.Schema({
   },
   resetPasswordToken: String,
   resetPasswordExpire: Date,
+
+  physics: {
+    type: [{
+      chapterId: {
+        type: String,
+        required: true
+      },
+      note: {
+        type: String,
+        default: ""
+      },
+      isComplete: {
+        type: Boolean,
+        default: false
+      },
+      lastUpdated: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+  },
+
+  chemistry: {
+    type: [{
+      chapterId: {
+        type: String,
+        required: true
+      },
+      note: {
+        type: String,
+        default: ""
+      },
+      isComplete: {
+        type: Boolean,
+        default: false
+      },
+      lastUpdated: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+  },
+
+  maths: {
+    type: [{
+      chapterId: {
+        type: String,
+        required: true
+      },
+      note: {
+        type: String,
+        default: ""
+      },
+      isComplete: {
+        type: Boolean,
+        default: false
+      },
+      lastUpdated: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+  }
 });
 
 studentSchema.pre("save", async function (next) {
@@ -136,4 +197,3 @@ studentSchema.methods.generateResetPasswordToken = function () {
   return resetToken;
 };
 module.exports = mongoose.model("Student", studentSchema);
-

@@ -1,15 +1,10 @@
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const express = require("express");
-const allowedOrigin = [process.env.ALLOWEDORIGIN1, process.env.ALLOWEDORIGIN2];
+const allowedOrigin = [process.env.ALLOWEDORIGIN1,process.env.ALLOWEDORIGIN2];
 const app = express();
 const server = createServer(app);
-const {
-  saveMentorMessage,
-  saveStudentMessage,
-  getMentorMessages,
-  getStudentMessages,
-} = require("./controllers/messageController.js");
+const cors = require("cors");
 const io = new Server(server, {
   cors: {
     origin: allowedOrigin,
@@ -17,17 +12,16 @@ const io = new Server(server, {
     credentials: true,
   },
 });
+
 const mentorRoute = require("./routes/metorRoute");
-const messageRoutes = require("./routes/messageRoute");
 const studentRoute = require("./routes/studentRoute");
 const rateLimit = require("express-rate-limit");
 const counter = require("./routes/counter.js");
 const paymentRoute = require("./routes/paymentRoute");
-const bodyParser = require("body-parser");
+const bodyParser = require("body-parser"); 
 const fileUpload = require("express-fileupload");
 const errorCatcher = require("./utils/errorCatcher");
 const cookieParser = require("cookie-parser");
-const cors = require("cors");
 const { chatService } = require("./chatService/chatController.js");
 const connectedUsers = new Map();
 const onlineUsers = new Map();
@@ -35,9 +29,12 @@ const openedChat = new Map();
 app.use(
   cors({
     credentials: true,
-    origin: allowedOrigin,
+    origin:  allowedOrigin
   })
 );
+app.get('/v1/health', (req, res) => {
+  res.status(200).json({ message: 'Backend is connected!' });
+});
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Credentials", "true");
@@ -63,10 +60,8 @@ app.use("/v1", counter);
 app.use("/v1", mentorRoute);
 app.use("/v1", studentRoute);
 app.use("/v1", paymentRoute);
-app.use("/v1", messageRoutes);
-
 io.on("connection", (socket) => {
-  chatService({ io, socket, openedChat, connectedUsers, onlineUsers });
+  chatService({io, socket,openedChat, connectedUsers, onlineUsers});
 });
 
 // io.on("connection", (socket) => {
