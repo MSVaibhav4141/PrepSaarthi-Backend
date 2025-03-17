@@ -39,13 +39,13 @@ Syllbus Tracker
 ![Screenshot 2025-03-17 013813](https://github.com/user-attachments/assets/8357fdc4-c2ba-4c24-91f6-a82e5f4fa401)
 
 Thourough review of metnor's payments
-![image](https://github.com/user-attachments/assets/259a89b2-0575-4bf3-8659-adc861823268)
+![image](https://github.com/user-attachments/assets/3063ddb1-c2f0-4fe2-a3e8-0a0c56118126)
 
 Admin dashboard analytic page
-![image](https://github.com/user-attachments/assets/62417131-a5c6-4a6b-a7f7-275bdefa0322)
+![image](https://github.com/user-attachments/assets/b567fdcb-28e9-4ec4-8584-a24a58086d4e)
 
 More features of admin dashboard
-![image](https://github.com/user-attachments/assets/eb34a679-f9ce-48dd-96ea-67a71f6364e2)
+![image](https://github.com/user-attachments/assets/2d6f01a8-eae4-49e3-89b2-4d3130bbbba4)
 
 
 
